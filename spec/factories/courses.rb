@@ -7,8 +7,8 @@
 #  title                 :string(255)
 #  created_at            :datetime
 #  updated_at            :datetime
-#  start                 :date
-#  end                   :date
+#  start                 :datetime
+#  end                   :datetime
 #  school                :string(255)
 #  term                  :string(255)
 #  character_sum         :integer          default(0)
@@ -22,8 +22,8 @@
 #  description           :text(65535)
 #  submitted             :boolean          default(FALSE)
 #  passcode              :string(255)
-#  timeline_start        :date
-#  timeline_end          :date
+#  timeline_start        :datetime
+#  timeline_end          :datetime
 #  day_exceptions        :string(2000)     default("")
 #  weekdays              :string(255)      default("0000000")
 #  new_article_count     :integer          default(0)
@@ -39,9 +39,15 @@
 #  syllabus_file_size    :integer
 #  syllabus_updated_at   :datetime
 #  home_wiki_id          :integer
+#  recent_revision_count :integer          default(0)
+#  needs_update          :boolean          default(FALSE)
+#  chatroom_id           :string(255)
+#  flags                 :text(65535)
+#  level                 :string(255)
+#  private               :boolean          default(FALSE)
 #
 
-FactoryGirl.define do
+FactoryBot.define do
   factory :course, class: 'ClassroomProgramCourse' do
     start Date.new(2015, 1, 1)
     self.end Date.new(2015, 6, 1)
@@ -98,6 +104,18 @@ FactoryGirl.define do
     slug 'PRB/Legacy_basket-weaving_edit-a-thon_(spring_2013)'
     passcode 'pizza'
     type 'LegacyCourse'
+    home_wiki_id 1
+  end
+
+  factory :article_scoped_program, class: 'ArticleScopedProgram' do
+    start Date.new(2013, 1, 1)
+    self.end Date.new(2013, 6, 1)
+    title 'Only basket-weaving'
+    school 'WMIT'
+    term 'spring 2013'
+    slug 'WMIT/Only_basket-weaving_edit-a-thon_(spring_2013)'
+    passcode 'pizza'
+    type 'ArticleScopedProgram'
     home_wiki_id 1
   end
 end

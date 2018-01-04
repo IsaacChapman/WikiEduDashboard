@@ -1,30 +1,33 @@
 # frozen_string_literal: true
+
 class SurveysController < ApplicationController
   helper Rapidfire::ApplicationHelper
   include CourseHelper
   include SurveysHelper
   include QuestionGroupsHelper
 
-  before_action :require_admin_permissions, except: [:show, :optout]
-  before_action :set_survey, only: [
-    :show,
-    :optout,
-    :edit,
-    :update,
-    :destroy,
-    :edit_question_groups,
-    :course_select,
-    :results
+  before_action :require_admin_permissions, except: %i[show optout]
+  before_action :set_survey, only: %i[
+    show
+    optout
+    edit
+    update
+    destroy
+    edit_question_groups
+    course_select
+    results
   ]
   before_action :ensure_logged_in
-  before_action :set_question_groups, only: [
-    :show,
-    :edit,
-    :edit_question_groups,
-    :results
+  before_action :set_question_groups, only: %i[
+    show
+    edit
+    edit_question_groups
+    results
   ]
   before_action :check_if_closed, only: [:show]
   before_action :set_notification, only: [:show]
+
+  # via SurveysHelper
   before_action :set_course, only: [:show]
 
   # GET /surveys
@@ -61,6 +64,7 @@ class SurveysController < ApplicationController
     # the surveys and puts all questions on display at once, but it is gets
     # around the accessibility probems.
     @accessibility_mode = true if params['accessibility'] == 'true'
+    filter_inapplicable_question_groups
     render layout: 'surveys_minimal'
   end
 
@@ -78,12 +82,10 @@ class SurveysController < ApplicationController
   end
 
   # GET /surveys/1/edit
-  def edit
-  end
+  def edit; end
 
   # GET /surveys/1/question_group
-  def edit_question_groups
-  end
+  def edit_question_groups; end
 
   # POST /surveys
   # POST /surveys.json
@@ -114,13 +116,6 @@ class SurveysController < ApplicationController
       format.html { redirect_to surveys_url, notice: 'Survey was successfully destroyed.' }
       format.json { head :no_content }
     end
-  end
-
-  def clone
-    clone = Survey.find(params[:id]).deep_clone include: [:rapidfire_question_groups]
-    clone.name = "#{clone.name} (Copy)"
-    clone.save
-    redirect_to surveys_path
   end
 
   def clone_question_group
@@ -155,6 +150,17 @@ class SurveysController < ApplicationController
   def set_question_groups
     @question_groups = Rapidfire::QuestionGroup.all
     @surveys_question_groups = SurveysQuestionGroup.by_position(params[:id])
+  end
+
+  # This removes the question groups that do not apply to the course, because
+  # of the 'tags' parameter that makes the question group apply only to courses
+  # with (all) those tags, or to courses in all the specified campaigns.
+  def filter_inapplicable_question_groups
+    @surveys_question_groups.select! do |survey_question_group|
+      next false if survey_question_group.question_group.questions.empty?
+      # via QuestionGroupsHelper
+      course_meets_conditions_for_question_group?(survey_question_group.question_group)
+    end
   end
 
   # Never trust parameters from the scary internet, only allow the white list through.

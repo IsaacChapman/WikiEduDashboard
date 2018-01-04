@@ -1,5 +1,9 @@
 import React from 'react';
-import LookupStore from '../../stores/lookup_store.coffee';
+import createReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
+import _ from 'lodash';
+
+import LookupStore from '../../stores/lookup_store.js';
 
 const LookupWrapper = function (Component) {
   const getState = (model, exclude) =>
@@ -8,12 +12,12 @@ const LookupWrapper = function (Component) {
       submitting: false
     })
   ;
-  return React.createClass({
+  return createReactClass({
     displayName: 'LookupWrapper',
 
     propTypes: {
-      model: React.PropTypes.string,
-      exclude: React.PropTypes.array
+      model: PropTypes.string,
+      exclude: PropTypes.array
     },
 
     mixins: [LookupStore.mixin],

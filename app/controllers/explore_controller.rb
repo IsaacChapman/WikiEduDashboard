@@ -1,12 +1,17 @@
 # frozen_string_literal: true
-#= Controller for course functionality
+
+#= Controller for campaign/course functionality
 class ExploreController < ApplicationController
   respond_to :html
 
   def index
-    campaign = params[:campaign] || ENV['default_campaign']
-    @presenter = CoursesPresenter.new(current_user, campaign)
-    raise ActionController::RoutingError
-      .new('Not Found'), 'Campaign does not exist' unless @presenter.campaign
+    # 'cohort' is the old name for campaign. We accept 'cohort' as an alternative
+    # Redirect to new campaign overview page if a parameter is given, for backwards compatibility
+    campaign_param = params[:campaign] || params[:cohort]
+    redirect_to campaign_path(campaign_param) if campaign_param
+
+    @presenter = CoursesPresenter.new(current_user: current_user,
+                                      campaign_param: ENV['default_campaign'])
+    @campaign = @presenter.campaign
   end
 end

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'rss'
 
 #= Controller for dashboard functionality
@@ -24,7 +25,7 @@ class DashboardController < ApplicationController
       RSS::Parser.parse(BLOG_FEED_URL, false).items
     end
   # Rescue 404 errors, in case wikiedu.org is down.
-  rescue OpenURI::HTTPError
+  rescue OpenURI::HTTPError, SocketError
     @blog_posts = []
   end
 
@@ -48,9 +49,9 @@ class DashboardController < ApplicationController
     # This makes sure the combination of displayed courses includes all courses,
     # without leaving some stuck in between being past and current.
     if current_user.admin?
-      current_user.courses.where('end <= ?', Date.today)
+      current_user.courses.where('end <= ?', Date.today).order(end: :desc)
     else
-      current_user.courses.archived
+      current_user.courses.archived.order(end: :desc)
     end
   end
 end

@@ -14,6 +14,9 @@
 #  updated_at     :datetime         not null
 #  message        :text(65535)
 #  target_user_id :integer
+#  subject_id     :integer
+#  resolved       :boolean          default(FALSE)
+#  details        :text(65535)
 #
 
 # Alert for a course that is highly productive

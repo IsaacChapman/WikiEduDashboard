@@ -1,4 +1,4 @@
-import StockStore from './stock_store.coffee';
+import StockStore from './stock_store.js';
 
 const RevisionStore = new StockStore({
   sortKey: 'date',
@@ -8,7 +8,6 @@ const RevisionStore = new StockStore({
     characters: true
   },
   modelKey: 'revision'
-}
-);
+});
 
 export default RevisionStore.store;

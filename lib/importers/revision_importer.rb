@@ -1,80 +1,51 @@
 # frozen_string_literal: true
+
 require "#{Rails.root}/lib/replica"
 require "#{Rails.root}/lib/duplicate_article_deleter"
 require "#{Rails.root}/lib/importers/article_importer"
 
 #= Imports and updates revisions from Wikipedia into the dashboard database
 class RevisionImporter
-  def initialize(wiki = nil)
-    wiki ||= Wiki.default_wiki
+  def initialize(wiki, course)
     @wiki = wiki
+    @course = course
   end
 
-  ################
-  # Entry points #
-  ################
-
-  def self.update_all_revisions(courses=nil, all_time=false)
-    courses = [courses] if courses.is_a? Course
-    courses ||= all_time ? Course.all : Course.current
-    courses.each do |course|
-      wiki_ids = course.assignments.pluck(:wiki_id) + [course.home_wiki.id]
-      wiki_ids.uniq.each do |wiki_id|
-        importer = new(Wiki.find(wiki_id))
-        results = importer.get_revisions_for_course(course)
-        importer.import_revisions(results)
-      end
-      ArticlesCourses.update_from_course(course)
-    end
+  def import_new_revisions_for_course
+    import_revisions(new_revisions_for_course)
   end
+
+  ###########
+  # Helpers #
+  ###########
+  private
 
   # Given a Course, get new revisions for the users in that course.
-  def get_revisions_for_course(course)
+  def new_revisions_for_course
     results = []
-    return results if course.students.empty?
-    start = course_start_date(course)
-    end_date = end_of_update_period(course)
-    new_users = users_with_no_revisions(course)
 
-    old_users = course.students - new_users
+    # Users with no revisions are considered "new". For them, we search for
+    # revisions starting from the beginning of the course, in case they were
+    # just added to the course.
+    @new_users = users_with_no_revisions
+    results += revisions_from_new_users unless @new_users.empty?
 
-    # rubocop:disable Style/IfUnlessModifier
-    unless new_users.empty?
-      results += get_revisions(new_users, start, end_date)
-    end
-    # rubocop:enable Style/IfUnlessModifier
-
-    unless old_users.empty?
-      first_rev = first_revision(course)
-      start = first_rev.date.strftime('%Y%m%d') unless first_rev.blank?
-      results += get_revisions(old_users, start, end_date)
-    end
+    # For users who already have revisions during the course, we assume that
+    # previous updates imported their revisions prior to the latest revisions.
+    # We only need to import revisions
+    @old_users = @course.students - @new_users
+    results += revisions_from_old_users unless @old_users.empty?
     results
   end
 
-  def move_or_delete_revisions(revisions=nil)
-    # NOTE: All revisions passed to this method should be from the same @wiki.
-    revisions ||= Revision.where(wiki_id: @wiki.id)
-    return if revisions.empty?
+  def revisions_from_new_users
+    get_revisions(@new_users, course_start_date, end_of_update_period)
+  end
 
-    synced_revisions = Utils.chunk_requests(revisions, 100) do |block|
-      Replica.new(@wiki).get_existing_revisions_by_id block
-    end
-    synced_rev_ids = synced_revisions.map { |r| r['rev_id'].to_i }
-
-    deleted_rev_ids = revisions.pluck(:mw_rev_id) - synced_rev_ids
-    Revision.where(wiki_id: @wiki.id, mw_rev_id: deleted_rev_ids)
-            .update_all(deleted: true)
-    Revision.where(wiki_id: @wiki.id, mw_rev_id: synced_rev_ids)
-            .update_all(deleted: false)
-
-    moved_ids = synced_rev_ids - deleted_rev_ids
-    moved_revisions = synced_revisions.reduce([]) do |moved, rev|
-      moved.push rev if moved_ids.include? rev['rev_id'].to_i
-    end
-    moved_revisions.each do |moved|
-      handle_moved_revision moved
-    end
+  def revisions_from_old_users
+    first_rev = latest_revision_of_course
+    start = first_rev.blank? ? course_start_date : first_rev.date.strftime('%Y%m%d')
+    get_revisions(@old_users, start, end_of_update_period)
   end
 
   def import_revisions(data)
@@ -86,11 +57,6 @@ class RevisionImporter
     end
   end
 
-  ###########
-  # Helpers #
-  ###########
-  private
-
   # Get revisions made by a set of users between two dates.
   def get_revisions(users, start, end_date)
     Utils.chunk_requests(users, 40) do |block|
@@ -98,24 +64,24 @@ class RevisionImporter
     end
   end
 
-  def course_start_date(course)
-    course.start.strftime('%Y%m%d')
+  def course_start_date
+    @course.start.strftime('%Y%m%d')
   end
 
-  DAYS_TO_IMPORT_AFTER_COURSE_END = 30
-  def end_of_update_period(course)
-    # Add one day so that the query does not end at the beginning of the last day.
-    (course.end + 1.day + DAYS_TO_IMPORT_AFTER_COURSE_END.days).strftime('%Y%m%d')
+  # pull all revisions until present, so that we have any after-the-end revisions
+  # included for calculating retention when a past course gets updated.
+  def end_of_update_period
+    2.days.from_now.strftime('%Y%m%d')
   end
 
-  def users_with_no_revisions(course)
-    course.users.role('student')
-          .joins(:courses_users)
-          .where(courses_users: { revision_count: 0 })
+  def users_with_no_revisions
+    @course.users.role('student')
+           .joins(:courses_users)
+           .where(courses_users: { revision_count: 0 })
   end
 
-  def first_revision(course)
-    course.revisions.where(wiki_id: @wiki.id).order('date DESC').first
+  def latest_revision_of_course
+    @course.revisions.where(wiki_id: @wiki.id).order('date DESC').first
   end
 
   def import_revisions_slice(sub_data)
@@ -163,24 +129,6 @@ class RevisionImporter
                  new_article: string_to_boolean(rev_data['new_article']),
                  system: string_to_boolean(rev_data['system']),
                  wiki_id: rev_data['wiki_id'])
-  end
-
-  def handle_moved_revision(moved)
-    mw_page_id = moved['rev_page']
-
-    unless Article.exists?(wiki_id: @wiki.id, mw_page_id: mw_page_id)
-      ArticleImporter.new(@wiki).import_articles([mw_page_id])
-    end
-
-    article = Article.find_by(wiki_id: @wiki.id, mw_page_id: mw_page_id)
-
-    # Don't update the revision to point to a new article if there isn't one.
-    # This may happen if the article gets moved and then deleted, and there's
-    # some inconsistency or timing delay in the update process.
-    return unless article
-
-    Revision.find_by(wiki_id: @wiki.id, mw_rev_id: moved['rev_id'])
-            .update(article_id: article.id, mw_page_id: mw_page_id)
   end
 
   def string_to_boolean(string)

@@ -18,7 +18,7 @@ import urlParse from 'url-parse';
 // Required Internal Modules
 //--------------------------------------------------------
 
-const Utils = require('./SurveyUtils.coffee');
+import Utils from './SurveyUtils.js';
 
 //--------------------------------------------------------
 // Survey Module Misc Options
@@ -53,6 +53,7 @@ const Survey = {
 
   currentBlock: 0,
   submitted: [],
+  submittedAll: false,
   surveyConditionals: {},
   previewMode: false,
   detachedParentBlocks: {},
@@ -88,7 +89,7 @@ const Survey = {
     this.$main.on('click', '[data-next-survey-block]', this.validateCurrentQuestion.bind(this));
     this.$main.on('click', '[data-prev-survey-block]', this.previousBlock.bind(this));
     this.$main.on('click', '[start-survey]', this.surveyStarted.bind(this));
-    $('[data-submit-survey]').on('click', this.submitAllQuestionGroups.bind(this));
+    $(document).on('click', '[data-submit-survey]', this.submitAllQuestionGroups.bind(this));
     $('[data-void-checkboxes]').on('click', this.voidCheckboxSelections.bind(this));
     $('.survey__multiple-choice-field input[type=checkbox]').on('change', this.uncheckVoid.bind(this));
     $('.block input, .block textarea, .block select').on('change keydown', this.removeErrorState.bind(this));
@@ -168,6 +169,7 @@ const Survey = {
       this.groupSliders.push(slider);
     });
     $(this.parentSlider).removeClass('loading');
+    this.updateButtonText();
   },
 
   toggleTabNavigationForQuestion(enable, slick, current) {
@@ -234,6 +236,7 @@ const Survey = {
     if (!this.previewMode) {
       this.updateSurveyNotification();
       this.$surveyForm.each(this.submitQuestionGroup.bind(this));
+      this.submittedAll = true;
     }
   },
 
@@ -244,7 +247,6 @@ const Survey = {
     const url = $form.attr('action');
     const method = $form.attr('method');
     const _context = this;
-
     $form.on('submit', function (e) {
       e.preventDefault();
       const data = _context.processQuestionGroupData($(this).serializeArray());
@@ -291,8 +293,8 @@ const Survey = {
     const _postData = {};
     const answerGroup = {};
     data.forEach((field) => {
-      const name = field.name;
-      const value = field.value;
+      const { name } = field;
+      const { value } = field;
       const val = {};
       const answerText = {};
       if (name.indexOf('answer_group') !== -1) {
@@ -345,7 +347,7 @@ const Survey = {
     }
 
     let validation = $form.parsley({ uiEnabled: false })
-                          .validate({ group: `${$block.data('parsley-group')}` });
+      .validate({ group: `${$block.data('parsley-group')}` });
 
     if ((typeof questionGroupIndex !== 'undefined' && questionGroupIndex !== null)) {
       $form = $(this.$surveyForm[questionGroupIndex]);
@@ -431,9 +433,18 @@ const Survey = {
     } else {
       currentIndex = $currentBlock.data('progress-index');
     }
-    const progressWidth = (currentIndex / total) * 100;
-    const width = `${progressWidth}%`;
+    const progress = (currentIndex / total) * 100;
+    const width = `${progress}%`;
     this.surveyProgress.css('width', width);
+
+    if (progress === 100 && !this.submittedAll) {
+      this.submitAllQuestionGroups();
+    }
+  },
+
+  updateButtonText() {
+    $('.survey__next-text').text('Next');
+    $('.survey__next-text').last().text('Submit Survey');
   },
 
   removeNextButton({ target }) {
@@ -526,11 +537,18 @@ const Survey = {
       }
 
       this.addConditionalQuestionToStore(question_id, $question);
-
-      if ((typeof value !== 'undefined' && value !== null)) { this.surveyConditionals[question_id][value] = $question; }
+      this.addListenersToConditional($question, conditionalOptions);
       this.surveyConditionals[question_id].currentAnswers = [];
 
-      this.addListenersToConditional($question, conditionalOptions);
+      if (typeof value === 'undefined' && value === null) return;
+
+      const $currentQuestionValue = this.surveyConditionals[question_id][value];
+      if ($currentQuestionValue) {
+        const $newQuestionSet = $currentQuestionValue.add($question);
+        this.surveyConditionals[question_id][value] = $newQuestionSet;
+      } else {
+        this.surveyConditionals[question_id][value] = $question;
+      }
     });
   },
 
@@ -544,11 +562,13 @@ const Survey = {
   },
 
   addListenersToConditional($question, conditionalOptions) {
-    const { question_id, operator, value, multi } = conditionalOptions;
+    const {
+      question_id, operator, value, multi
+    } = conditionalOptions;
     switch (operator) {
       case '*presence':
         return this.conditionalPresenceListeners(question_id, $question);
-      case '<': case '>':case '<=': case '>=':
+      case '<': case '>': case '<=': case '>=':
         return this.conditionalComparisonListeners(question_id, operator, value, $question);
       default:
         return this.conditionalAnswerListeners(question_id, multi);
@@ -602,7 +622,7 @@ const Survey = {
   },
 
   handleParentConditionalChange(value, conditionalGroup, $parent) {
-    let currentAnswers = conditionalGroup.currentAnswers;
+    let { currentAnswers } = conditionalGroup;
     let conditional;
     // let resetQuestions = false;
 
@@ -614,7 +634,7 @@ const Survey = {
 
       // Check if conditional was present and is no longer
       currentAnswers.forEach((a) => {
-        if (value.indexOf(a === -1)) {
+        if (value.indexOf(a) === -1) {
           const index = currentAnswers.indexOf(a);
           if (currentAnswers.length === 1) {
             currentAnswers = [];
@@ -625,7 +645,8 @@ const Survey = {
       });
       // Check if value matches a conditional question
       value.forEach((v) => {
-        if (conditionalGroup[v] !== undefined) {
+        if (conditionalGroup[v] !== undefined &&
+            currentAnswers.indexOf(v) === -1) {
           conditional = conditionalGroup[v];
           currentAnswers.push(v);
           conditionalGroup.currentAnswers = currentAnswers;
@@ -665,7 +686,6 @@ const Survey = {
   handleParentPresenceConditionalChange(params) {
     const { present, conditionalGroup, $parent } = params;
     const $question = $(conditionalGroup.question);
-
     if (present && !conditionalGroup.present) {
       conditionalGroup.present = true;
       this.activateConditionalQuestion($question, $parent);
@@ -726,7 +746,7 @@ const Survey = {
     } else {
       $question.detach();
     }
-    $question.find('input, textarea').val('');
+    $question.find('input[type=text], textarea').val('');
     $question.find('input:checked').removeAttr('checked');
     $question.find('select').prop('selectedIndex', 0);
     $question.find('.survey__next.hidden').removeClass('hidden');
@@ -745,6 +765,7 @@ const Survey = {
       $slider.slick('slickAdd', $question, parentIndex);
       this.indexBlocks();
     }
+    this.updateButtonText();
   },
 
   attachMatrixParentBlock($question, questionGroupIndex) {

@@ -14,10 +14,15 @@
 #  updated_at     :datetime         not null
 #  message        :text(65535)
 #  target_user_id :integer
+#  subject_id     :integer
+#  resolved       :boolean          default(FALSE)
+#  details        :text(65535)
 #
 
-FactoryGirl.define do
-  factory :alert do
-    type 'ArticlesForDeletionAlert'
-  end
+FactoryBot.define do
+  factory :alert, class: 'ArticlesForDeletionAlert'
+
+  factory :active_course_alert, class: 'ActiveCourseAlert'
+
+  factory :continued_course_activity_alert, class: 'ContinuedCourseActivityAlert'
 end

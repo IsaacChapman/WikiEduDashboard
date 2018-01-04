@@ -1,10 +1,11 @@
-.course_main
-  margin-top 30px 
-  
+.course_main,
+.campaign_main
+  margin-top 30px
+
   .stat-display
     margin-bottom 0px
     margin-top 0px
-    
+
 .course
   background #fff
   border 1px solid $border_lt
@@ -82,7 +83,7 @@
     .course-details_value
       font-size 19px
       color $text
-      
+
 .course-syllabus__uploader
   position relative
   background rgba($border_lt, .5)
@@ -150,3 +151,26 @@ rating(color)
     rating(#D2D2D2)
   &.list
     rating(#656E92)
+
+@media only screen and (max-width: 920px)
+  .course_main,
+  .campaign_main
+    margin-top 163px
+
+  .course
+    padding 3px
+
+    .course-title
+      font-size 15px
+
+    .course-details
+      display inline-block
+
+      .col
+        display flex
+        margin-right unset
+
+      .course-details_title
+        padding-right 5px
+      .course-details_value
+        font-size 15px

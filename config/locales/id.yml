@@ -3,8 +3,11 @@
 # Export driver: phpyaml
 # Author: Arief
 # Author: Arifin.wijaya
+# Author: Hidayatsrf
 # Author: Mirws
+# Author: Presidenvolksraad
 # Author: Rachmat.Wahidi
+# Author: Rachmat04
 ---
 id:
   application:
@@ -31,6 +34,7 @@ id:
     log_in: Masuk dengan Wikipedia
     sign_up: Masuk dengan Wikipedia
   articles:
+    edited_by: 'Disunting oleh:'
     loading: Memuat artikel...
     rating_docs:
       start: Mulai kelas - artikel awal dengan banyak ruang untuk perbaikan
@@ -40,6 +44,7 @@ id:
     reviewers: Peninjau
   courses:
     course_description: Kursus
+    needs_update: Jadwal Pembaruan Data
     word_count_doc: Perkiraan jumlah kata ditambahkan ke artikel mainspace oleh siswa
       kursus selama jangka kursus
   courses_generic:
@@ -69,6 +74,8 @@ id:
     training_complete:
       one: telah diperbarui dengan pelatihan
       other: telah diperbarui dengan pelatihan
+  user_profiles:
+    institution_placeholder: Nama institusi (opsional)
   wizard:
     assignment_description: Pilih tanggal mulai dan akhir untuk waktu tugas Anda.
       Sebagai contoh, jika Anda ingin memulai proyek Wikipedia Anda minggu kedua kelas,

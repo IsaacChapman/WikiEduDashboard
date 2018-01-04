@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 # == Schema Information
 #
 # Table name: surveys
@@ -12,9 +13,10 @@
 #  open                 :boolean          default(FALSE)
 #  closed               :boolean          default(FALSE)
 #  confidential_results :boolean          default(FALSE)
+#  optout               :text(65535)
 #
 
-FactoryGirl.define do
+FactoryBot.define do
   factory :survey, class: 'Survey' do
     name 'My Survey'
   end

@@ -1,18 +1,20 @@
 import React from 'react';
+import createReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import Editable from '../high_order/editable.jsx';
 import TextAreaInput from '../common/text_area_input.jsx';
-import CourseStore from '../../stores/course_store.coffee';
+import CourseStore from '../../stores/course_store.js';
 import CourseActions from '../../actions/course_actions.js';
 
 const getState = () => ({ course: CourseStore.getCourse() });
 
-const Description = React.createClass({
+const Description = createReactClass({
   displayName: 'Description',
 
   propTypes: {
-    course: React.PropTypes.object,
-    editable: React.PropTypes.bool,
-    controls: React.PropTypes.any
+    course: PropTypes.object,
+    editable: PropTypes.bool,
+    controls: PropTypes.any
   },
 
   updateDescription(valueKey, value) {
@@ -45,4 +47,4 @@ const Description = React.createClass({
 }
 );
 
-export default Editable(Description, [CourseStore], CourseActions.persistCourse, getState, 'Edit Description');
+export default Editable(Description, [CourseStore], CourseActions.persistCourse, getState, I18n.t('editable.edit_description'));

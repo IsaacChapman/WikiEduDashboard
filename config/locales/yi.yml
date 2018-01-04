@@ -6,7 +6,11 @@
 yi:
   application:
     cancel: אַנולירן
+    documentation: דאָקומענטאַציע
+    error: 'ס׳האט פאסירט א פֿעלער:'
     explore: אנטדעקן
+    field_required: דאס פֿעלד איז נויטבאר
+    field_invalid_characters: דאס פֿעלד האט אומגוליטיגע כאראקטערן
     greeting2: ברוך הבא!
     greeting_extended: ברוך הבא צו וויקיפעדיע
     greeting: האלא!
@@ -23,6 +27,7 @@ yi:
     sign_up: אײַנשרייבן
     submit: איינגעבן
     change: טוישן
+    details: פרטים
   home:
     explore: אויספארשן
     log_in: אַרײנלאגירן צו וויקיפעדיע
@@ -33,6 +38,7 @@ yi:
     label: אקטיוויטעט
   articles:
     edited_mobile: אַרטיקלען
+    hide: באַהאַלטן
     label: אַרטיקלען
     loading: אנלאדן ארטיקלען…
     new: (ניי)
@@ -43,12 +49,19 @@ yi:
     none: קיין
   courses:
     articles: אַרטיקלען
+    calendar:
+      legend_class_canceled: פֿייערטאָג/אַנולירט
+      legend_class_meeting: קלאס באטרעף
     creator:
+      course_language: היים שפראך
+      course_project: היים פראיעקט
+      course_term_placeholder: זמן
       end_date: סוף דאַטע
       find: טרעפט אייער קורס
       start_date: אָנהייב דאַטע
     school: שולע
   courses_generic:
+    all_courses: אלע פראגראמען
     creator:
       course_school: אַנשטאַלט
       course_title: פראגראם־טיטל
@@ -56,6 +69,8 @@ yi:
     school: אנשטאלט
     student_editors: רעדאקטארן
     students_short: רעדאקטארן
+  timeline:
+    block_milestone: מיילן־שטיין
   users:
     assign_articles_done: ערליידיקט
 ...

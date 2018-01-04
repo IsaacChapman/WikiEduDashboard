@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-
 # == Schema Information
 #
 # Table name: alerts
@@ -15,6 +14,9 @@
 #  updated_at     :datetime         not null
 #  message        :text(65535)
 #  target_user_id :integer
+#  subject_id     :integer
+#  resolved       :boolean          default(FALSE)
+#  details        :text(65535)
 #
 
 class Alert < ActiveRecord::Base
@@ -26,20 +28,42 @@ class Alert < ActiveRecord::Base
 
   include ArticleHelper
 
-  ALERT_TYPES = %w(
+  serialize :details, Hash
+
+  ALERT_TYPES = %w[
     ActiveCourseAlert
     ArticlesForDeletionAlert
+    BlockedEditsAlert
     ContinuedCourseActivityAlert
     DeletedUploadsAlert
+    DiscretionarySanctionsEditAlert
+    DYKNominationAlert
     NeedHelpAlert
     NoEnrolledStudentsAlert
     ProductiveCourseAlert
+    SurveyResponseAlert
+    UnsubmittedCourseAlert
     UntrainedStudentsAlert
-  ).freeze
+  ].freeze
   validates_inclusion_of :type, in: ALERT_TYPES
+
+  RESOLVABLE_ALERT_TYPES = %w[
+    ArticlesForDeletionAlert
+    ContinuedCourseActivityAlert
+    DiscretionarySanctionsEditAlert
+    DYKNominationAlert
+  ].freeze
 
   def course_url
     "https://#{ENV['dashboard_url']}/courses/#{course.slug}"
+  end
+
+  def user_profile_url
+    "https://#{ENV['dashboard_url']}/users/#{user.username}"
+  end
+
+  def user_contributions_url
+    courses_user&.contribution_url
   end
 
   def email_content_expert
@@ -67,10 +91,16 @@ class Alert < ActiveRecord::Base
   end
 
   # Disable emails for specific alert types in application.yml, like so:
-  #   ProductCourseAlert_email_disabled: 'true'
+  #   ProductiveCourseAlert_email_disabled: 'true'
   def emails_disabled?
     ENV["#{self.class}_emails_disabled"] == 'true'
   end
+
+  # This can be used to copy dashboard emails to Salesforce
+  def bcc_to_salesforce_email
+    ENV['bcc_to_salesforce_email']
+  end
+
   #########################
   # Type-specific methods #
   #########################
@@ -85,5 +115,14 @@ class Alert < ActiveRecord::Base
 
   def reply_to
     nil
+  end
+
+  def resolvable?
+    false
+  end
+
+  def courses_user
+    return unless course && user
+    @courses_user ||= CoursesUsers.find_by(course_id: course.id, user_id: user.id)
   end
 end

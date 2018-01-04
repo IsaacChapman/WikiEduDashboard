@@ -1,20 +1,22 @@
 import React from 'react';
-import TransitionGroup from 'react-addons-css-transition-group';
+import createReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
+import TransitionGroup from 'react-transition-group/CSSTransitionGroup';
 
-import Timeline from './timeline.cjsx';
+import Timeline from './timeline.jsx';
 import Grading from './grading.jsx';
 import Editable from '../high_order/editable.jsx';
 
-import CourseDateUtils from '../../utils/course_date_utils.coffee';
+import CourseDateUtils from '../../utils/course_date_utils.js';
 
 import ServerActions from '../../actions/server_actions.js';
 import TimelineActions from '../../actions/timeline_actions.js';
 
-import CourseStore from '../../stores/course_store.coffee';
-import WeekStore from '../../stores/week_store.coffee';
-import BlockStore from '../../stores/block_store.coffee';
-import GradeableStore from '../../stores/gradeable_store.coffee';
-import TrainingStore from '../../training/stores/training_store.coffee';
+import CourseStore from '../../stores/course_store.js';
+import WeekStore from '../../stores/week_store.js';
+import BlockStore from '../../stores/block_store.js';
+import GradeableStore from '../../stores/gradeable_store.js';
+import TrainingStore from '../../training/stores/training_store.js';
 
 const getState = () =>
   ({
@@ -24,26 +26,24 @@ const getState = () =>
     gradeables: GradeableStore.getGradeables(),
     all_training_modules: TrainingStore.getAllModules(),
     editable_block_ids: BlockStore.getEditableBlockIds(),
-    editable_week_id: WeekStore.getEditableWeekId(),
     course: CourseStore.getCourse()
   })
 ;
 
-const TimelineHandler = React.createClass({
+const TimelineHandler = createReactClass({
   displayName: 'TimelineHandler',
 
   propTypes: {
-    course_id: React.PropTypes.string,
-    course: React.PropTypes.object,
-    current_user: React.PropTypes.object,
-    children: React.PropTypes.node,
-    controls: React.PropTypes.func,
-    weeks: React.PropTypes.array,
-    gradeables: React.PropTypes.array,
-    loading: React.PropTypes.bool,
-    editable_block_ids: React.PropTypes.array,
-    editable_week_id: React.PropTypes.number,
-    all_training_modules: React.PropTypes.array
+    course_id: PropTypes.string,
+    course: PropTypes.object,
+    current_user: PropTypes.object,
+    children: PropTypes.node,
+    controls: PropTypes.func,
+    weeks: PropTypes.array,
+    gradeables: PropTypes.array,
+    loading: PropTypes.bool,
+    editable_block_ids: PropTypes.array,
+    all_training_modules: PropTypes.array
   },
 
   getInitialState() {
@@ -74,7 +74,6 @@ const TimelineHandler = React.createClass({
     this.setState({ reorderable: false });
     const toSave = $.extend(true, {}, this.props);
     TimelineActions.persistTimeline(toSave, this.props.course_id);
-    WeekStore.clearEditableWeekId();
     if (editableBlockId > 0) {
       return BlockStore.cancelBlockEditable(editableBlockId);
     }
@@ -83,7 +82,7 @@ const TimelineHandler = React.createClass({
 
   render() {
     const meetings = CourseDateUtils.meetings(this.props.course);
-    let weekMeetings = CourseDateUtils.weekMeetings(meetings, this.props.course, this.props.course.day_exceptions);
+    const weekMeetings = CourseDateUtils.weekMeetings(meetings, this.props.course, this.props.course.day_exceptions);
     const openWeeks = CourseDateUtils.openWeeks(weekMeetings);
 
     let outlet;
@@ -111,7 +110,7 @@ const TimelineHandler = React.createClass({
     } else {
       showGrading = true;
     }
-    let grading = showGrading ? <Grading {...this.props} /> : null;
+    const grading = showGrading ? <Grading {...this.props} /> : null;
 
     return (
       <div>
@@ -129,7 +128,6 @@ const TimelineHandler = React.createClass({
           weeks={this.props.weeks}
           week_meetings={weekMeetings}
           editable_block_ids={this.props.editable_block_ids}
-          editable_week_id={this.props.editable_week_id}
           reorderable={this.state.reorderable}
           controls={this.props.controls}
           saveGlobalChanges={this.saveTimeline}

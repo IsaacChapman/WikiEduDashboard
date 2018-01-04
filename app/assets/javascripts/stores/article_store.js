@@ -1,4 +1,4 @@
-import StockStore from './stock_store.coffee';
+import StockStore from './stock_store.js';
 
 const ArticleStore = new StockStore({
   sortKey: 'character_sum',
@@ -7,7 +7,6 @@ const ArticleStore = new StockStore({
     view_count: true
   },
   modelKey: 'article'
-}
-);
+});
 
 export default ArticleStore.store;

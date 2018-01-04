@@ -1,12 +1,14 @@
 import React from 'react';
+import createReactClass from 'create-react-class';
+import PropTypes from 'prop-types';
 import CourseLink from '../common/course_link.jsx';
 import Calendar from '../common/calendar.jsx';
 import Modal from '../common/modal.jsx';
 import DatePicker from '../common/date_picker.jsx';
-import CourseStore from '../../stores/course_store.coffee';
-import ValidationStore from '../../stores/validation_store.coffee';
+import CourseStore from '../../stores/course_store.js';
+import ValidationStore from '../../stores/validation_store.js';
 import CourseActions from '../../actions/course_actions.js';
-import CourseDateUtils from '../../utils/course_date_utils.coffee';
+import CourseDateUtils from '../../utils/course_date_utils.js';
 
 const getState = function () {
   const course = CourseStore.getCourse();
@@ -17,11 +19,11 @@ const getState = function () {
   };
 };
 
-const Meetings = React.createClass({
+const Meetings = createReactClass({
   displayName: 'Meetings',
 
   propTypes: {
-    weeks: React.PropTypes.array // Comes indirectly from TimelineHandler
+    weeks: PropTypes.array // Comes indirectly from TimelineHandler
   },
 
   mixins: [CourseStore.mixin],
@@ -65,7 +67,7 @@ const Meetings = React.createClass({
     const dateProps = CourseDateUtils.dateProps(this.state.course);
     let courseLinkClass = 'dark button ';
     courseLinkClass += this.saveDisabledClass();
-    let courseLinkTarget = `/courses/${this.state.course.slug}/timeline`;
+    const courseLinkTarget = `/courses/${this.state.course.slug}/timeline`;
 
     return (
       <Modal >
@@ -138,7 +140,7 @@ const Meetings = React.createClass({
             </label>
           </div>
           <div className="wizard__panel__controls">
-            <div className="left"></div>
+            <div className="left" />
             <div className="right">
               <CourseLink
                 onClick={this.saveCourse}

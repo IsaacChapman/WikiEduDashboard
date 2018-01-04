@@ -1,4 +1,4 @@
-import StockStore from './stock_store.coffee';
+import StockStore from './stock_store.js';
 
 const UserStore = new StockStore({
   sortKey: 'username',
@@ -12,7 +12,6 @@ const UserStore = new StockStore({
     username: ''
   },
   uniqueKeys: ['id', 'role']
-}
-);
+});
 
 export default UserStore.store;
